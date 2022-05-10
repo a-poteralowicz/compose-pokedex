@@ -1,8 +1,9 @@
 package com.sudhindra.composepokedex.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.material.Scaffold
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -11,6 +12,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.sudhindra.composepokedex.routes.Route
 import com.sudhindra.composepokedex.ui.components.CustomAppBar
+import com.sudhindra.composepokedex.ui.utils.LocalTheme
 
 val allRoutes = listOf(
     Route.Dashboard,
@@ -22,6 +24,7 @@ val allRoutes = listOf(
     Route.Favourites,
 )
 
+
 @Composable
 fun MainUi() {
     val navController = rememberNavController()
@@ -31,10 +34,20 @@ fun MainUi() {
     val title: String =
         allRoutes.find { it.route == currentRoute }?.title ?: Route.Dashboard.title
 
+    @Composable
+    fun toggleTheme() {
+        LocalTheme.current.toggleTheme()
+    }
+
+    val toggleThemeComposableAction = ComposableAction {
+        toggleTheme()
+    }
+
     Scaffold(topBar = {
         CustomAppBar(
+            Modifier.clickable { toggleThemeComposableAction() },
             label = title,
-            showBackButton = currentRoute != Route.Dashboard.route
+            showBackButton = currentRoute != Route.Dashboard.route,
         )
     }) {
         NavHost(navController, startDestination = Route.Dashboard.route) {
@@ -53,6 +66,28 @@ fun MainUi() {
             composable(Route.Types.route) { TypesUi(navHostController = navController) }
             composable(Route.Regions.route) { RegionsUi(navHostController = navController) }
             composable(Route.Favourites.route) { FavouritesUi() }
+        }
+    }
+}
+
+interface NonComposableCall {
+    operator fun invoke()
+}
+
+@Composable
+fun ComposableAction(
+    action: @Composable () -> Unit
+): NonComposableCall {
+    var executionState by remember { mutableStateOf(false) }
+
+    if (executionState) {
+        action()
+        executionState = false
+    }
+
+    return object : NonComposableCall {
+        override fun invoke() {
+            executionState = true
         }
     }
 }
